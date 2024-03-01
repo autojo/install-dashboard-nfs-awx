@@ -3,7 +3,7 @@
 
 - name: Deploy Dashboard
   kubernetes.core.helm:
-    #state: "{{ #state | default('present') }}"
+    state: "{{ state | default('present') }}"
     name: kubernetes-dashboard
     create_namespace: true
     chart_ref: "{{ webserver }}/helm/{{ k3s_dashboard_helm_chart }}"
@@ -14,7 +14,7 @@
 
 - name: Deploy nfs-subdir-external-provisioner chart from webserver
   kubernetes.core.helm:
-    #state: "{{ #state | default('present') }}"
+    state: "{{ state | default('present') }}"
     name: nfs-subdir-external-provisioner
     create_namespace: true
     chart_ref: "{{ webserver }}/helm/{{ k3s_nfs_provisioner_helm_chart }}"
@@ -25,7 +25,7 @@
 
 - name: Deploy awx-operator chart from webserver
   kubernetes.core.helm:
-    #state: "{{ #state | default('present') }}"
+    state: "{{ state | default('present') }}"
     name: awx-operator
     create_namespace: true
     chart_ref: "{{ webserver }}/helm/{{ k3s_awx_operator_helm_chart }}"
@@ -33,7 +33,7 @@
 
 - name: Deploy AWX Instance
   kubernetes.core.k8s:
-    #state: "{{ #state | default('present') }}"
+    state: "{{ state | default('present') }}"
     namespace: awx
     apply: yes
     wait: yes
@@ -54,7 +54,8 @@
 
         service_type: "{{ service_type | default(omit) }}"  # Either clusterIP, Loadbalancer or NodePort
         ingress_type: "{{ ingress_type | default(omit) }}"  # Either none, Ingress, Route
-        ingress_hosts: "{{ ingress_hosts | default(omit) }}"
+        ingress_hosts: 
+        - hostname: "{{ ingress_hosts | default(omit) }}"
         ingress_path: "{{ ingress_path | default(omit) }}" #localhost
         ingress_path_type: "{{ ingress_path_type | default(omit) }}" #Prefix
         
@@ -62,7 +63,7 @@
         
         nodeport_port: "{{ nodeport_port | default(omit) }}"
         
-        # replicas: "{{ replicas | int }}"
+        replicas: "{{ replicas }}"
         # web_replicas: 1
         # task_replicas: 1
 
