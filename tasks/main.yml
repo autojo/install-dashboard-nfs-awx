@@ -47,28 +47,29 @@
         image_version: "{{ image_version | default(omit) }}"
 
         image_pull_policy: "{{ image_pull_policy | default(omit) }}"
-        no_log: "{{ no_log | default(omit) }}" #false
+        no_log: "{{ no_log | default(omit) }}" # false
 
         admin_user: admin
         admin_email: admin@localhost
 
         service_type: "{{ service_type | default(omit) }}"  # Either clusterIP, Loadbalancer or NodePort
         ingress_type: "{{ ingress_type | default(omit) }}"  # Either none, Ingress, Route
-        ingress_hosts: 
+        ingress_hosts:
         - hostname: "{{ ingress_hosts | default(omit) }}"
-        ingress_path: "{{ ingress_path | default(omit) }}" #localhost
-        ingress_path_type: "{{ ingress_path_type | default(omit) }}" #Prefix
-        
+        ingress_path: "{{ ingress_path | default(omit) }}" # localhost
+        ingress_path_type: "{{ ingress_path_type | default(omit) }}" # Prefix
+
         development_mode: "{{ development_mode | default(omit) | bool }}"
-        
+
         nodeport_port: "{{ nodeport_port | default(omit) }}"
-        
-        replicas: "{{ replicas }}"
+
+        replicas: 2
+        # replicas: "{{ awx_replicas | int(2) }}"
         # web_replicas: 1
         # task_replicas: 1
 
-        ipv6_disabled: "{{ ipv6_disabled | default(omit) }}" #true
-        
+        ipv6_disabled: "{{ ipv6_disabled | default(omit) }}" # true
+
         projects_persistence: "{{ projects_persistence | default(omit) }}" # true
         projects_storage_class: "{{ projects_storage_class | default(omit) }}" # standard
         projects_storage_size: "{{ projects_storage_size | default(omit) }}" # 1Gi
