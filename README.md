@@ -6,10 +6,10 @@ This role installs the kubernetes dashboard, nfs csi, awx operator and a corresp
 Requirements
 ------------
 
-A webserver with context webserver.my.domain/k3s with the following files
+A local Kubeconfig (~/.kube/config) and a webserver with context webserver.my.domain/k3s with the following files
 * awx-operator helm chart
 * nfs-subdir-external-provisioner helm chart
-* kubernetes dashboard deployment yaml
+* kubernetes dashboard helm chart
 
 ```bash
 k3s
@@ -55,14 +55,14 @@ Example Playbook
     service_type: ClusterIP
     
     ingress_type: ingress
-    ingress_hosts: localhost
+    ingress_hosts: awx-instance.my.domain
     ingress_path: /
     ingress_path_type: Prefix
 
     ipv6_disabled: true
 
     projects_persistence: true
-    projects_storage_class: standard
+    projects_storage_class: standard-sc
     projects_storage_size: 1Gi
 
   roles:
