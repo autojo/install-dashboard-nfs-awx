@@ -1,0 +1,71 @@
+---
+# tasks file for ansible-role-nfs-csi
+
+- name: Deploy Dashboard
+  kubernetes.core.k8s:
+    #state: "{{ #state | default('present') }}"
+    src: "{{ webserver }}/dashboard/{{ k3s_dashboard }}"
+
+- name: Deploy nfs-subdir-external-provisioner chart from webserver
+  kubernetes.core.helm:
+    #state: "{{ #state | default('present') }}"
+    name: nfs-subdir-external-provisioner
+    create_namespace: true
+    chart_ref: "{{ webserver }}/helm/{{ k3s_nfs_provisioner_helm_chart }}"
+    release_namespace: nfs-subdir-external-provisioner
+    set_values:
+      - value: "nfs.server={{ k3s_nfs_server }}"
+      - value: "nfs.path={{ k3s_nfs_path }}"
+
+- name: Deploy awx-operator chart from webserver
+  kubernetes.core.helm:
+    #state: "{{ #state | default('present') }}"
+    name: awx-operator
+    create_namespace: true
+    chart_ref: "{{ webserver }}/helm/{{ k3s_awx_operator_helm_chart }}"
+    release_namespace: awx
+
+- name: Deploy AWX Instance
+  kubernetes.core.k8s:
+    #state: "{{ #state | default('present') }}"
+    namespace: awx
+    apply: yes
+    wait: yes
+    definition:
+      apiVersion: awx.ansible.com/v1beta1
+      kind: AWX
+      metadata:
+        name: "{{ instance_name }}"
+      spec:
+        image: "{{ image | default(omit) }}"
+        image_version: "{{ image_version | default(omit) }}"
+
+        image_pull_policy: "{{ image_pull_policy | default(omit) }}"
+        no_log: "{{ no_log | default(omit) }}" #false
+
+        admin_user: admin
+        admin_email: admin@localhost
+
+        service_type: "{{ service_type | default(omit) }}"  # Either clusterIP, Loadbalancer or NodePort
+        ingress_type: "{{ ingress_type | default(omit) }}"  # Either none, Ingress, Route
+        ingress_hosts: "{{ ingress_hosts | default(omit) }}"
+        ingress_path: "{{ ingress_path | default(omit) }}" #localhost
+        ingress_path_type: "{{ ingress_path_type | default(omit) }}" #Prefix
+        
+        development_mode: "{{ development_mode | default(omit) | bool }}"
+        
+        nodeport_port: "{{ nodeport_port | default(omit) }}"
+        
+        # replicas: "{{ replicas | int }}"
+        # web_replicas: 1
+        # task_replicas: 1
+
+        ipv6_disabled: "{{ ipv6_disabled | default(omit) }}" #true
+        
+        projects_persistence: "{{ projects_persistence | default(omit) }}" # true
+        projects_storage_class: "{{ projects_storage_class | default(omit) }}" # standard
+        projects_storage_size: "{{ projects_storage_size | default(omit) }}" # 1Gi
+
+        # ldap_cacert_secret: "{{instance_name}}-custom-certs"
+        # ldap_password_secret: "{{instance_name}}-ldap-password"
+        # bundle_cacert_secret: "{{instance_name}}-custom-certs"
