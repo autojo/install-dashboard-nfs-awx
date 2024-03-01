@@ -2,9 +2,15 @@
 # tasks file for ansible-role-nfs-csi
 
 - name: Deploy Dashboard
-  kubernetes.core.k8s:
+  kubernetes.core.helm:
     #state: "{{ #state | default('present') }}"
-    src: "{{ webserver }}/dashboard/{{ k3s_dashboard }}"
+    name: kubernetes-dashboard
+    create_namespace: true
+    chart_ref: "{{ webserver }}/helm/{{ k3s_dashboard_helm_chart }}"
+    release_namespace: kubernetes-dashboard
+    set_values:
+      - value: "nginx.enabled=false"
+      - value: "cert-manager.enabled=false"
 
 - name: Deploy nfs-subdir-external-provisioner chart from webserver
   kubernetes.core.helm:

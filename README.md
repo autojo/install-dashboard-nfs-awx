@@ -13,11 +13,10 @@ A webserver with context webserver.my.domain/k3s with the following files
 
 ```bash
 k3s
-├── dashboard
-│   └── dashboard.yaml
 └── helm
-    ├── awx-operator-2.10.0.tgz
-    └── nfs-subdir-external-provisioner-4.0.18.tgz
+    ├── awx-operator-2.12.2.tgz
+    ├── kubernetes-dashboard-6.0.8.tgz
+    └── nfs-subdir-external-provisioner-4.0.18.tgz
 ```
 
 Role Variables
@@ -45,9 +44,9 @@ Example Playbook
     k3s_nfs_path: /srv/nfs/k3s
     webserver: 'http://webserver.my.domain/k3s'
 
-    k3s_dashboard: dashboard.yaml
+    k3s_dashboard_helm_chart: kubernetes-dashboard-6.0.8.tgz
     k3s_nfs_provisioner_helm_chart: nfs-subdir-external-provisioner-4.0.18.tgz
-    k3s_awx_operator_helm_chart: awx-operator-2.10.0.tgz
+    k3s_awx_operator_helm_chart: awx-operator-2.12.2.tgz
 
     state: present
 
