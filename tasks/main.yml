@@ -1,16 +1,63 @@
 ---
-# tasks file for ansible-role-nfs-csi
+# tasks file for install-dashboard-nfs-awx
 
-- name: Deploy Dashboard
-  kubernetes.core.helm:
-    state: "{{ state | default('present') }}"
-    name: kubernetes-dashboard
-    create_namespace: true
-    chart_ref: "{{ webserver }}/helm/{{ k3s_dashboard_helm_chart }}"
-    release_namespace: kubernetes-dashboard
-    set_values:
-      - value: "nginx.enabled=false"
-      - value: "cert-manager.enabled=false"
+- name: Install Dashboard and create IngressRouteTCP
+  block:
+    - name: Deploy Dashboard
+      kubernetes.core.helm:
+        state: "{{ state | default('present') }}"
+        name: kubernetes-dashboard
+        create_namespace: true
+        chart_ref: "{{ webserver }}/helm/{{ k3s_dashboard_helm_chart }}"
+        release_namespace: kubernetes-dashboard
+
+    - name: Create Traefik IngressRouteTCP for Kubernetes Dashboard
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: traefik.containo.us/v1alpha1
+          kind: IngressRouteTCP
+          metadata:
+            name: kubernetes-dashboard-ingress-route-tcp
+            namespace: kubernetes-dashboard
+          spec:
+            entryPoints:
+            - websecure
+            routes:
+            - match: HostSNI(`{{ ingress_hosts_dashboard }}`)
+              services:
+              - name: kubernetes-dashboard-kong-proxy
+                namespace: kubernetes-dashboard
+                port: 443
+            tls:
+              passthrough: true
+        
+    - name: Create ServiceAccount for Kubernetes Dashboard
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: admin-user
+            namespace: kubernetes-dashboard
+
+    - name: Grant ServiceAccount cluster-admin privileges 
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: admin-user
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: cluster-admin
+          subjects:
+          - kind: ServiceAccount
+            name: admin-user
+            namespace: kubernetes-dashboard
 
 - name: Deploy nfs-subdir-external-provisioner chart from webserver
   kubernetes.core.helm:
@@ -22,6 +69,7 @@
     set_values:
       - value: "nfs.server={{ k3s_nfs_server }}"
       - value: "nfs.path={{ k3s_nfs_path }}"
+      - value: storageClass.defaultClass=true
 
 - name: Deploy awx-operator chart from webserver
   kubernetes.core.helm:
@@ -51,11 +99,13 @@
 
         admin_user: admin
         admin_email: admin@localhost
+        
+        auto_upgrade: "{{ auto_upgrade }}"
 
-        service_type: "{{ service_type | default(omit) }}"  # Either clusterIP, Loadbalancer or NodePort
         ingress_type: "{{ ingress_type | default(omit) }}"  # Either none, Ingress, Route
+        ingress_tls_secret: "{{ ingress_tls_secret | default(omit) }}"
         ingress_hosts:
-        - hostname: "{{ ingress_hosts | default(omit) }}"
+        - hostname: "{{ ingress_hosts_awx | default(omit) }}"
         ingress_path: "{{ ingress_path | default(omit) }}" # localhost
         ingress_path_type: "{{ ingress_path_type | default(omit) }}" # Prefix
 
@@ -63,10 +113,7 @@
 
         nodeport_port: "{{ nodeport_port | default(omit) }}"
 
-        replicas: 2
-        # replicas: "{{ awx_replicas | int(2) }}"
-        # web_replicas: 1
-        # task_replicas: 1
+        replicas: 1
 
         ipv6_disabled: "{{ ipv6_disabled | default(omit) }}" # true
 
