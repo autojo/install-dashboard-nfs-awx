@@ -1,0 +1,33 @@
+api:
+  containers:
+    args:
+      - --tls-cert-file=tls.crt
+      - --tls-key-file=tls.key
+      - --default-cert-dir=/certs
+    volumeMounts:
+      - mountPath: /tmp
+        name: tmp-volume
+      - mountPath: /certs
+        name: kubernetes-dashboard-certs
+    volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: kubernetes-dashboard-certs
+        secret:
+          secretName: kubernetes-dashboard-certs
+
+kong:
+  env:
+    dns_order: LAST,A,CNAME,AAAA,SRV
+    plugins: 'off'
+    nginx_worker_processes: 1
+    ssl_cert: /certs/tls.crt
+    ssl_cert_key: /certs/tls.key
+  deployment:
+    userDefinedVolumes:
+      - name: kubernetes-dashboard-certs
+        secret:
+          secretName: kubernetes-dashboard-certs
+    userDefinedVolumeMounts:
+      - name: kubernetes-dashboard-certs
+        mountPath: /certs
