@@ -1,5 +1,5 @@
 ---
-# tasks file for ansible-role-nfs-csi
+# tasks file for install-dashboard-nfs-awx
 
 - name: Deploy Dashboard
   kubernetes.core.helm:
@@ -53,6 +53,7 @@
     set_values:
       - value: "nfs.server={{ k3s_nfs_server }}"
       - value: "nfs.path={{ k3s_nfs_path }}"
+      - value: storageClass.defaultClass=true
 
 - name: Deploy awx-operator chart from webserver
   kubernetes.core.helm:
@@ -82,11 +83,13 @@
 
         admin_user: admin
         admin_email: admin@localhost
+        
+        auto_upgrade: "{{ auto_upgrade }}"
 
-        service_type: "{{ service_type | default(omit) }}"  # Either clusterIP, Loadbalancer or NodePort
         ingress_type: "{{ ingress_type | default(omit) }}"  # Either none, Ingress, Route
+        ingress_tls_secret: "{{ ingress_tls_secret | default(omit) }}"
         ingress_hosts:
-        - hostname: "{{ ingress_hosts | default(omit) }}"
+        - hostname: "{{ ingress_hosts_awx | default(omit) }}"
         ingress_path: "{{ ingress_path | default(omit) }}" # localhost
         ingress_path_type: "{{ ingress_path_type | default(omit) }}" # Prefix
 
@@ -94,10 +97,7 @@
 
         nodeport_port: "{{ nodeport_port | default(omit) }}"
 
-        replicas: 2
-        # replicas: "{{ awx_replicas | int(2) }}"
-        # web_replicas: 1
-        # task_replicas: 1
+        replicas: 1
 
         ipv6_disabled: "{{ ipv6_disabled | default(omit) }}" # true
 
