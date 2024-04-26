@@ -58,6 +58,7 @@ Example Playbook
     service_type: ClusterIP
     
     ingress_type: ingress
+    ingress_tls_secret: tls-secret
     ingress_hosts: awx-instance.my.domain
     ingress_path: /
     ingress_path_type: Prefix
