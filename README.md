@@ -54,6 +54,8 @@ Example Playbook
     state: present
 
     instance_name: awx-instance
+
+    auto_upgrade: true
     
     service_type: ClusterIP
     
