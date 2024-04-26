@@ -9,6 +9,13 @@
     chart_ref: "{{ webserver }}/helm/{{ k3s_dashboard_helm_chart }}"
     release_namespace: kubernetes-dashboard
     values:
+      app:    
+        settings:
+          ingress:
+            enabled: true
+            useDefaultIngressClass: true
+            hosts:
+              - "{{ ingress_hosts_dashboard }}"
       kong:
         env:
           dns_order: LAST,A,CNAME,AAAA,SRV
@@ -24,6 +31,38 @@
           userDefinedVolumeMounts:
             - name: kubernetes-dashboard-certs
               mountPath: /certs
+
+- name: Create Ingress TLS Secret for Kubernetes-Dashboard
+  kubernetes.core.k8s:
+    state: present
+    definition: 
+      apiVersion: v1
+      kind: Secret
+      type: Opaque             
+      metadata:
+        name: kubernetes-dashboard-certs
+        namespace: kubernetes-dashboard
+      data:
+        tls.crt: "{{ lookup('file', 'roles/install-dashboard-nfs-awx/files/my.lab.pem') | b64encode }}"
+        tls.key: "{{ lookup('file', 'roles/install-dashboard-nfs-awx/files/my.lab.key.pem') | b64encode }}"
+
+- name: Create IngressRouteTCP for kubernetes-dashboard
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.containo.us/v1alpha1
+      kind: IngressRouteTCP
+      metadata:
+        name: ingressroute-kubernetes-dashboard
+        namespace: kubernetes-dashboard
+      spec:
+        routes:
+        - match: HostSNI(`{{ ingress_hosts_dashboard }}`)
+          services:
+              - name: kubernetes-dashboard-kong-proxy
+                port: 443
+        tls:
+          passthrough: true 
 
 - name: Deploy nfs-subdir-external-provisioner chart from webserver
   kubernetes.core.helm:
@@ -44,6 +83,20 @@
     create_namespace: true
     chart_ref: "{{ webserver }}/helm/{{ k3s_awx_operator_helm_chart }}"
     release_namespace: awx
+
+- name: Create Ingress TLS Secret for AWX
+  kubernetes.core.k8s:
+    state: present
+    definition: 
+      apiVersion: v1
+      kind: Secret
+      type: Opaque             
+      metadata:
+        name: "{{ ingress_tls_secret }}"
+        namespace: awx
+      data:
+        tls.crt: "{{ lookup('file', 'roles/install-dashboard-nfs-awx/files/my.lab.pem') | b64encode }}"
+        tls.key: "{{ lookup('file', 'roles/install-dashboard-nfs-awx/files/my.lab.key.pem') | b64encode }}"
 
 - name: Deploy AWX Instance
   kubernetes.core.k8s:
